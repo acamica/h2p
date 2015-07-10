@@ -54,10 +54,27 @@ try {
     page.customHeaders = options.request.headers;
     phantom.cookies = options.request.cookies;
 
+    page.settings.resourceTimeout = 5000;
+    
+    page.onResourceTimeout = function(e) {
+        page.reason_url = e.url;
+        page.reason = e.errorString;
+        console.log(JSON.stringify({
+            success: false,
+            response: 'Timeout'
+        }));
+        phantom.exit(0);
+    };
+
+    page.onResourceError = function(e) {
+        page.reason = e.errorString;
+        page.reason_url = e.url;
+    };
+
     page.open(options.request.uri + (options.request.method == 'GET' ? '?' + options.request.params : ''), options.request.method, options.request.params, function (status) {
         try {
             if (status !== 'success') {
-                throw 'Unable to access the URI! (Make sure you\'re using a .html extension if you\'re trying to use a local file)';
+                throw 'Unable to access URL: ' + page.reason_url + '\\' + page.reason;
             }
 
             var paperSize = {
@@ -80,7 +97,7 @@ try {
                 options.footer = {
                     height: customOptions.footer.height || options.footer.height,
                     content: customOptions.footer.content || options.footer.content
-                }
+                };
             }
 
             if (options.allowParseCustomHeader && customOptions.header) {
@@ -88,7 +105,7 @@ try {
                 options.header = {
                     height: customOptions.header.height || options.header.height,
                     content: customOptions.header.content || options.header.content
-                }
+                };
             }
 
             if (options.footer) {
@@ -97,7 +114,7 @@ try {
                     contents: phantom.callback(function(pageNum, totalPages) {
                         return options.footer.content.replace('{{pageNum}}', pageNum).replace('{{totalPages}}', totalPages);
                     })
-                }
+                };
             }
 
             if (options.header) {
@@ -106,20 +123,20 @@ try {
                     contents: phantom.callback(function(pageNum, totalPages) {
                         return options.header.content.replace('{{pageNum}}', pageNum).replace('{{totalPages}}', totalPages);
                     })
-                }
+                };
             }
 
             page.paperSize = paperSize;
             page.zoomFactor = options.zoomFactor;
-            page.render(options.destination, { format: 'pdf' });
 
-            console.log(JSON.stringify({
-                success: true,
-                response: null
-            }));
-
-            // Stop the script
-            phantom.exit(0);
+            setTimeout(function() {
+                page.render(options.destination, { format: 'pdf' });
+                console.log(JSON.stringify({
+                    success: true,
+                    response: null
+                }));
+                phantom.exit(0);
+            }, 1000);
 
         } catch (e) {
             errorHandler(e);
