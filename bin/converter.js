@@ -55,7 +55,7 @@ try {
     phantom.cookies = options.request.cookies;
 
     page.settings.resourceTimeout = 5000;
-    
+
     page.onResourceTimeout = function(e) {
         page.reason_url = e.url;
         page.reason = e.errorString;
@@ -128,6 +128,21 @@ try {
 
             page.paperSize = paperSize;
             page.zoomFactor = options.zoomFactor;
+
+            page.settings.dpi = 72;
+
+            // Assumes format = 'Letter' (in inches)
+            if (page.paperSize.orientation === 'landscape') {
+                page.viewportSize = {
+                    width: 11 * page.settings.dpi,
+                    height: 8.5 * page.settings.dpi
+                };
+            } else {
+                page.viewportSize = {
+                    width: 8.5 * page.settings.dpi,
+                    height: 11 * page.settings.dpi
+                };
+            }
 
             setTimeout(function() {
                 page.render(options.destination, { format: 'pdf' });
