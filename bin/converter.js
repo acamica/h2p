@@ -51,10 +51,18 @@ try {
     // Take all options in one JSON param
     var options = JSON.parse(args[1]);
 
-    page.customHeaders = options.request.headers;
-    phantom.cookies = options.request.cookies;
+    // console.log(JSON.stringify({
+    //     success: false,
+    //     response: args[1]
+    // }));
+    // phantom.exit(0);
+    // return phantom.exit(0);
 
-    page.settings.resourceTimeout = 5000;
+
+    // page.customHeaders = options.request.headers;
+    // phantom.cookies = options.request.cookies;
+    //
+    page.settings.resourceTimeout = 6000;
 
     page.onResourceTimeout = function(e) {
         page.reason_url = e.url;
@@ -70,8 +78,9 @@ try {
         page.reason = e.errorString;
         page.reason_url = e.url;
     };
+    // page.open(options.request.uri + (options.request.method == 'GET' ? '?' + options.request.params : ''), options.request.method, options.request.params, function (status) {
+    page.open(options.request.uri, function (status) {
 
-    page.open(options.request.uri + (options.request.method == 'GET' ? '?' + options.request.params : ''), options.request.method, options.request.params, function (status) {
         try {
             if (status !== 'success') {
                 throw 'Unable to access URL: ' + page.reason_url + '\\' + page.reason;
@@ -84,50 +93,50 @@ try {
             };
 
             // If we enable custom footer per page, evaluate it
-            if (options.allowParseCustomFooter || options.allowParseCustomHeader) {
-                var customOptions = page.evaluate(function() {
-                    return (typeof _h2p_options == "object"
-                        && (typeof _h2p_options.footer == "object" || typeof _h2p_options.header == "object"))
-                        ? _h2p_options : {};
-                });
-            }
+            // if (options.allowParseCustomFooter || options.allowParseCustomHeader) {
+            //     var customOptions = page.evaluate(function() {
+            //         return (typeof _h2p_options == "object"
+            //             && (typeof _h2p_options.footer == "object" || typeof _h2p_options.header == "object"))
+            //             ? _h2p_options : {};
+            //     });
+            // }
 
-            if (options.allowParseCustomFooter && customOptions.footer) {
-                options.footer = options.footer || { height: '1cm', content: '' }; // Avoid some errors
-                options.footer = {
-                    height: customOptions.footer.height || options.footer.height,
-                    content: customOptions.footer.content || options.footer.content
-                };
-            }
+            // if (options.allowParseCustomFooter && customOptions.footer) {
+            //     options.footer = options.footer || { height: '1cm', content: '' }; // Avoid some errors
+            //     options.footer = {
+            //         height: customOptions.footer.height || options.footer.height,
+            //         content: customOptions.footer.content || options.footer.content
+            //     };
+            // }
 
-            if (options.allowParseCustomHeader && customOptions.header) {
-                options.header = options.header || { height: '1cm', content: '' }; // Avoid some errors
-                options.header = {
-                    height: customOptions.header.height || options.header.height,
-                    content: customOptions.header.content || options.header.content
-                };
-            }
+            // if (options.allowParseCustomHeader && customOptions.header) {
+            //     options.header = options.header || { height: '1cm', content: '' }; // Avoid some errors
+            //     options.header = {
+            //         height: customOptions.header.height || options.header.height,
+            //         content: customOptions.header.content || options.header.content
+            //     };
+            // }
 
-            if (options.footer) {
-                paperSize.footer = {
-                    height: options.footer.height,
-                    contents: phantom.callback(function(pageNum, totalPages) {
-                        return options.footer.content.replace('{{pageNum}}', pageNum).replace('{{totalPages}}', totalPages);
-                    })
-                };
-            }
+            // if (options.footer) {
+            //     paperSize.footer = {
+            //         height: options.footer.height,
+            //         contents: phantom.callback(function(pageNum, totalPages) {
+            //             return options.footer.content.replace('{{pageNum}}', pageNum).replace('{{totalPages}}', totalPages);
+            //         })
+            //     };
+            // }
 
-            if (options.header) {
-                paperSize.header = {
-                    height: options.header.height,
-                    contents: phantom.callback(function(pageNum, totalPages) {
-                        return options.header.content.replace('{{pageNum}}', pageNum).replace('{{totalPages}}', totalPages);
-                    })
-                };
-            }
+            // if (options.header) {
+            //     paperSize.header = {
+            //         height: options.header.height,
+            //         contents: phantom.callback(function(pageNum, totalPages) {
+            //             return options.header.content.replace('{{pageNum}}', pageNum).replace('{{totalPages}}', totalPages);
+            //         })
+            //     };
+            // }
 
             page.paperSize = paperSize;
-            page.zoomFactor = options.zoomFactor;
+            // page.zoomFactor = options.zoomFactor;
 
             page.settings.dpi = 72;
 
@@ -143,16 +152,19 @@ try {
                     height: 11 * page.settings.dpi
                 };
             }
-
-            setTimeout(function() {
-                page.render(options.destination, { format: 'pdf' });
-                console.log(JSON.stringify({
-                    success: true,
-                    response: null
-                }));
-                phantom.exit(0);
-            }, 1000);
-
+            setInterval(function() {
+                var ready = page.evaluate(function () {
+                    return window.prerenderReady;
+                });
+                if (ready) {
+                    page.render(options.destination, { format: 'pdf' });
+                    console.log(JSON.stringify({
+                        success: true,
+                        response: null
+                    }));
+                    phantom.exit(0);
+                }
+            }, 500);
         } catch (e) {
             errorHandler(e);
         }
