@@ -165,6 +165,10 @@ try {
                     phantom.exit(0);
                 }
             }, 500);
+            // Add timeout for page to "finish rendering" particular useful in case of error
+            setTimeout(function() {
+                phantom.exit(0);
+            }, 15000);
         } catch (e) {
             errorHandler(e);
         }
